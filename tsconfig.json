@@ -1,7 +1,10 @@
 {
-  "extends": "./tsconfig.base.json",
+  "extends": "@mossop/config/node-ts/tsconfig.base.json",
   "compilerOptions": {
-    "noEmit": true
+    "lib": ["es2021"],
+    "target": "es2020",
+
+    "allowJs": true
   },
-  "include": ["src/**/*.ts"]
+  "include": ["**/*.ts", "**/*.js", "**/.*.js"]
 }

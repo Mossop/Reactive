@@ -1,16 +1,19 @@
+import { subscribe, Subscribe } from "./subscribe";
+
 export type Observer<T> = (val: T, observer: Observable<T>) => void;
 export type ObservedValue<T> = T extends Observable<infer I> ? I : T;
+export type Unsubscribe = () => void;
 
-export type ObservableValue<T> = T extends number
-  ? number
-  : T extends string
-  ? string
-  : never;
-
+/**
+ * An observable value with a given type.
+ *
+ * Serializes correctly over JSON, can be used in limited circumstances as a
+ * primitive but to guarantee correct access use the `value` property.
+ */
 export abstract class Observable<T> {
   public abstract readonly value: T;
 
-  public valueOf() {
+  public valueOf(): T {
     return this.value;
   }
 
@@ -22,15 +25,34 @@ export abstract class Observable<T> {
     return this.value;
   }
 
-  public abstract observe(observer: Observer<T>): () => void;
+  public abstract [Subscribe](observer: Observer<T>): Unsubscribe;
 }
 
-export const isObservable = (param: unknown): param is Observable<any> =>
-  param instanceof Observable;
+/**
+ * Tests whether a value is observable.
+ *
+ * @param {unknown} value
+ *   The value to test.
+ * @returns {boolean} True if the value is observable.
+ */
+export const isObservable = (value: unknown): value is Observable<any> =>
+  value instanceof Observable;
 
-export class Immutable<T> extends Observable<T> {
+/**
+ * A wrapper for an observable, usually to hide some functionality.
+ */
+export class Wrapped<T> extends Observable<T> {
   #inner: Observable<T>;
 
+  /**
+   * Creates the wrapper.
+   *
+   * This wrapper will reflect the inner's value and subscribers will receive
+   * updates whenever the inner's value changes.
+   *
+   * @param {Observable<T>} inner
+   *   The observable to wrap.
+   */
   public constructor(inner: Observable<T>) {
     super();
     this.#inner = inner;
@@ -40,16 +62,24 @@ export class Immutable<T> extends Observable<T> {
     return this.#inner.value;
   }
 
-  public observe(observer: Observer<T>): () => void {
-    return this.#inner.observe((val) => observer(val, this));
+  public [Subscribe](observer: Observer<T>): Unsubscribe {
+    return subscribe(this.#inner, (newValue) => observer(newValue, this));
   }
 }
 
-export function valueOf<T>(param: T): ObservedValue<T> {
-  if (isObservable(param)) {
-    return param.value;
+/**
+ * Returns the value of a potentially observable value.
+ *
+ * @param {any} value
+ *   The value to return.
+ * @returns {any} If the passed value was an Observable then returns its actual
+ *   value otherwise returns the passed value.
+ */
+export function valueOf<T>(value: T | Observer<T>): ObservedValue<T> {
+  if (isObservable(value)) {
+    return value.value;
   }
 
-  // @ts-ignore
-  return param;
+  // @ts-expect-error
+  return value;
 }

@@ -1,13 +1,18 @@
-import { Observer, Observable, ObservableValue } from "./Observable";
+import { Observer, Observable, Unsubscribe } from "./Observable";
+import { Subscribe, Subscribers } from "./subscribe";
 
 export type Comparator<T> = (a: T, b: T) => boolean;
 
+/**
+ * An observable with a function to change the underlying value and notify
+ * subscribers.
+ */
 export class Mutable<T> extends Observable<T> {
   #value: T;
   #comparator: Comparator<T>;
-  #observers = new Set<Observer<T>>();
+  [Subscribers] = new Set<Observer<T>>();
 
-  public constructor(val: T, comparator: Comparator<T> = Object.is) {
+  public constructor(val: T, comparator: Comparator<T>) {
     super();
     this.#value = val;
     this.#comparator = comparator;
@@ -24,7 +29,7 @@ export class Mutable<T> extends Observable<T> {
 
     this.#value = val;
 
-    let observers = [...this.#observers];
+    let observers = [...this[Subscribers]];
 
     for (let observer of observers) {
       try {
@@ -33,17 +38,20 @@ export class Mutable<T> extends Observable<T> {
     }
   }
 
-  public observe(observer: Observer<T>): () => void {
-    this.#observers.add(observer);
+  public [Subscribe](observer: Observer<T>): Unsubscribe {
+    this[Subscribers].add(observer);
     return () => {
-      this.#observers.delete(observer);
+      this[Subscribers].delete(observer);
     };
   }
 }
 
+/**
+ * Creates an observable whose value can be changed.
+ */
 export function mutable<T>(
   initial: T,
   comparator: Comparator<T> = Object.is,
-): Mutable<T> & ObservableValue<T> {
-  return new Mutable(initial, comparator) as Mutable<T> & ObservableValue<T>;
+): Mutable<T> {
+  return new Mutable(initial, comparator);
 }

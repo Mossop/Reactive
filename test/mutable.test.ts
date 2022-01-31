@@ -1,4 +1,5 @@
-import { mutable } from "./Mutable";
+import { mutable } from "../src/Mutable";
+import { subscribe } from "../src/subscribe";
 
 test("Value changes correctly", () => {
   let val = mutable(5);
@@ -8,7 +9,7 @@ test("Value changes correctly", () => {
   expect(val.value).toBe(27);
 
   let observer = jest.fn();
-  let cancel = val.observe(observer);
+  let cancel = subscribe(val, observer);
 
   val.value = 6;
   expect(observer.mock.calls[0][0]).toBe(6);
