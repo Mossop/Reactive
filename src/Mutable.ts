@@ -1,5 +1,4 @@
-import { Observer, Observable, Unsubscribe } from "./Observable";
-import { Subscribe, Subscribers } from "./subscribe";
+import { ObservableBase } from "./observable";
 
 export type Comparator<T> = (a: T, b: T) => boolean;
 
@@ -7,10 +6,10 @@ export type Comparator<T> = (a: T, b: T) => boolean;
  * An observable with a function to change the underlying value and notify
  * subscribers.
  */
-export class Mutable<T> extends Observable<T> {
+class Mutable<T> extends ObservableBase<T> {
   #value: T;
+
   #comparator: Comparator<T>;
-  [Subscribers] = new Set<Observer<T>>();
 
   public constructor(val: T, comparator: Comparator<T>) {
     super();
@@ -29,20 +28,7 @@ export class Mutable<T> extends Observable<T> {
 
     this.#value = val;
 
-    let observers = [...this[Subscribers]];
-
-    for (let observer of observers) {
-      try {
-        observer(val, this);
-      } catch (e) {}
-    }
-  }
-
-  public [Subscribe](observer: Observer<T>): Unsubscribe {
-    this[Subscribers].add(observer);
-    return () => {
-      this[Subscribers].delete(observer);
-    };
+    this.notify();
   }
 }
 
