@@ -1,4 +1,4 @@
-import { Observable } from "../observable";
+import { Observable } from "../types";
 
 export type Order<T> = (a: T, b: T) => number;
 

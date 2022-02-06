@@ -6,5 +6,6 @@
 
     "allowJs": true
   },
-  "include": ["**/*.ts", "**/*.js", "**/.*.js"]
+  "include": ["**/*.ts", "**/*.js", "**/.*.js"],
+  "exclude": ["dist/**/*"]
 }

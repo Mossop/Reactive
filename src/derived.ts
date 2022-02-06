@@ -1,11 +1,7 @@
 import { Comparator } from "./mutable";
-import {
-  isObservable,
-  Observable,
-  ObservableBase,
-  ObservedValue,
-  Unsubscribe,
-} from "./observable";
+import { isObservable } from "./utils";
+import { Observable, ObservedValue, ObserverObject } from "./types";
+import { ObservableBase } from "./base";
 
 export type ObservedValues<T> = T extends [infer I]
   ? [ObservedValue<I>]
@@ -16,41 +12,35 @@ export type ObservedValues<T> = T extends [infer I]
 class Joined<T extends any[]> extends ObservableBase<ObservedValues<T>> {
   #value: ObservedValues<T>;
 
-  #unsubscribe: () => void;
+  #observer: ObserverObject<T>;
 
-  public constructor(...observables: T) {
+  public constructor(...values: T) {
     super();
 
-    let callbacks: (() => void)[] = [];
+    let observables: Map<Observable<any>, number> = new Map();
+
+    let observe = (value: any, observable: Observable<any>): void => {
+      let index = observables.get(observable);
+      if (index !== undefined) {
+        this.#value = [...this.#value] as unknown as ObservedValues<T>;
+        this.#value[index] = value;
+        this.notify();
+      }
+    };
+
+    this.#observer = { observe };
 
     this.#value = [] as unknown as ObservedValues<T>;
-    observables.forEach((val: any, index) => {
+    values.forEach((val: any, index) => {
       if (isObservable(val)) {
+        observables.set(val, this.#value.length);
+        val.subscribe(this.#observer);
+
         this.#value[index] = val.value;
-
-        callbacks.push(
-          val.subscribe((newValue) => {
-            this.#value = [...this.#value] as ObservedValues<T>;
-            this.#value[index] = newValue;
-
-            this.notify();
-          }),
-        );
       } else {
         this.#value[index] = val;
       }
     });
-
-    this.#unsubscribe = () => {
-      for (let cb of callbacks) {
-        cb();
-      }
-    };
-  }
-
-  public override destroy(): void {
-    super.destroy();
-    this.#unsubscribe();
   }
 
   public get value(): ObservedValues<T> {
@@ -75,9 +65,9 @@ export function join<O extends any[]>(
 }
 
 class Derived<S, T> extends ObservableBase<T> {
-  #unsubscribe: Unsubscribe;
-
   #value: T;
+
+  #observer: ObserverObject<S>;
 
   public constructor(
     observable: Observable<S>,
@@ -89,7 +79,7 @@ class Derived<S, T> extends ObservableBase<T> {
     let currentValue = observable.value;
     this.#value = mapper(currentValue);
 
-    this.#unsubscribe = observable.subscribe((newValue) => {
+    let observe = (newValue: S): void => {
       let previousValue = currentValue;
       currentValue = newValue;
 
@@ -98,16 +88,15 @@ class Derived<S, T> extends ObservableBase<T> {
         this.#value = newVal;
         this.notify();
       }
-    });
+    };
+
+    this.#observer = { observe };
+
+    observable.subscribe(this.#observer);
   }
 
   public get value(): T {
     return this.#value;
-  }
-
-  public override destroy() {
-    super.destroy();
-    this.#unsubscribe();
   }
 }
 

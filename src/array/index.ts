@@ -1,10 +1,11 @@
-import { isObservable, MaybeObservable, Unsubscribe } from "../observable";
+import { isObservable } from "../utils";
+import { MaybeObservable, Observable, ObserverObject } from "../types";
 import { Element, MutableArrayBase, ObservableArrayBase } from "./base";
 import { proxyArray, proxyMutableArray } from "./proxy";
 import { MutableArray, ObservableArray } from "./types";
 
 export class SourceArray<T> extends ObservableArrayBase<T, Element<T>> {
-  #unsubscribe: Unsubscribe;
+  #observer: ObserverObject<T>;
 
   public constructor(values: MaybeObservable<T>[]) {
     super(
@@ -16,31 +17,27 @@ export class SourceArray<T> extends ObservableArrayBase<T, Element<T>> {
       }),
     );
 
-    let callbacks: Unsubscribe[] = [];
-    values.forEach((value, index) => {
-      if (isObservable(value)) {
-        callbacks.push(
-          value.subscribe((newValue) => {
-            let element = this.storage[index];
-            if (element) {
-              element.value = newValue;
-              this.notifyChanges([element]);
-            }
-          }),
-        );
-      }
-    });
+    let observables: Map<Observable<any>, number> = new Map();
 
-    this.#unsubscribe = () => {
-      for (let unsub of callbacks) {
-        unsub();
+    let observe = (value: any, observable: Observable<any>): void => {
+      let index = observables.get(observable);
+      if (index !== undefined) {
+        let element = this.storage[index];
+        if (element) {
+          element.value = value;
+          this.notifyChanges([element]);
+        }
       }
     };
-  }
 
-  public override destroy(): void {
-    this.#unsubscribe();
-    super.destroy();
+    this.#observer = { observe };
+
+    values.forEach((value, index) => {
+      if (isObservable(value)) {
+        observables.set(value, index);
+        value.subscribe(this.#observer);
+      }
+    });
   }
 }
 

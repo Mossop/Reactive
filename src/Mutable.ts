@@ -1,4 +1,4 @@
-import { ObservableBase } from "./observable";
+import { ObservableBase } from "./base";
 
 export type Comparator<T> = (a: T, b: T) => boolean;
 

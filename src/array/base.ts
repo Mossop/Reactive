@@ -1,5 +1,5 @@
 import { Comparator } from "../mutable";
-import { ObservableBase } from "../observable";
+import { ObservableBase } from "../base";
 import { GetElement } from "./proxy";
 import { MutableArray, ObservableArray } from "./types";
 

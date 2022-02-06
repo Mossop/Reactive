@@ -7,6 +7,7 @@ test("array", () => {
 
   let arr = observableArray([4, 6, source1, 23, 89, source2]);
   expect(arr.value).toEqual([4, 6, 56, 23, 89, 83]);
+  expect(arr.length).toBe(6);
   arr.subscribe(observer);
 
   expect(arr[4]).toBe(89);
@@ -14,6 +15,7 @@ test("array", () => {
 
   source1.value = 19;
   expect(arr.value).toEqual([4, 6, 19, 23, 89, 83]);
+  expect(arr.length).toBe(6);
   expect(arr[2]).toBe(19);
   expect(observer).toHaveBeenCalledTimes(1);
   expect(observer.mock.calls[0][0]).toEqual(arr.value);
@@ -23,49 +25,49 @@ test("array", () => {
 
   source2.value = 3;
   expect(arr.value).toEqual([4, 6, 19, 23, 89, 3]);
+  expect(arr.length).toBe(6);
   expect(observer).toHaveBeenCalledTimes(1);
   expect(observer.mock.calls[0][0]).toEqual(arr.value);
   observer.mockClear();
-
-  arr.destroy();
-  expect(arr.value).toEqual([4, 6, 19, 23, 89, 3]);
-
-  source1.value = 190;
-  expect(arr.value).toEqual([4, 6, 19, 23, 89, 3]);
-  expect(observer).not.toHaveBeenCalled();
 });
 
 test("mutableArray", () => {
   let observer = jest.fn();
 
   let arr = mutableArray([4, 6, 56, 23, 89, 83]);
+  expect(arr.length).toBe(6);
   expect(arr.value).toEqual([4, 6, 56, 23, 89, 83]);
   arr.subscribe(observer);
 
   arr[2] = 19;
   expect(arr.value).toEqual([4, 6, 19, 23, 89, 83]);
+  expect(arr.length).toBe(6);
   expect(observer).toHaveBeenCalledTimes(1);
   expect(observer.mock.calls[0][0]).toEqual(arr.value);
   observer.mockClear();
 
   arr[5] = 3;
   expect(arr.value).toEqual([4, 6, 19, 23, 89, 3]);
+  expect(arr.length).toBe(6);
   expect(observer).toHaveBeenCalledTimes(1);
   expect(observer.mock.calls[0][0]).toEqual(arr.value);
   observer.mockClear();
 
   arr.delete(1);
   expect(arr.value).toEqual([4, 19, 23, 89, 3]);
+  expect(arr.length).toBe(5);
   expect(observer).toHaveBeenCalledTimes(1);
   expect(observer.mock.calls[0][0]).toEqual(arr.value);
   observer.mockClear();
 
   arr.delete(2, 0);
   expect(arr.value).toEqual([4, 19, 23, 89, 3]);
+  expect(arr.length).toBe(5);
   expect(observer).not.toHaveBeenCalled();
 
   arr.delete(2, 7);
   expect(arr.value).toEqual([4, 19]);
+  expect(arr.length).toBe(2);
   expect(observer).toHaveBeenCalledTimes(1);
   expect(observer.mock.calls[0][0]).toEqual(arr.value);
   observer.mockClear();
@@ -74,6 +76,7 @@ test("mutableArray", () => {
   arr[3] = 23;
   arr[4] = 6;
   expect(arr.value).toEqual([4, 19, 56, 23, 6]);
+  expect(arr.length).toBe(5);
   expect(observer).toHaveBeenCalledTimes(3);
   expect(observer.mock.calls[0][0]).toEqual([4, 19, 56]);
   expect(observer.mock.calls[1][0]).toEqual([4, 19, 56, 23]);
@@ -82,42 +85,49 @@ test("mutableArray", () => {
 
   arr.delete(-5, 7);
   expect(arr.value).toEqual([56, 23, 6]);
+  expect(arr.length).toBe(3);
   expect(observer).toHaveBeenCalledTimes(1);
   expect(observer.mock.calls[0][0]).toEqual(arr.value);
   observer.mockClear();
 
   arr.set(1, 67);
   expect(arr.value).toEqual([56, 67, 6]);
+  expect(arr.length).toBe(3);
   expect(observer).toHaveBeenCalledTimes(1);
   expect(observer.mock.calls[0][0]).toEqual(arr.value);
   observer.mockClear();
 
   arr.insert(1, 68, 72);
   expect(arr.value).toEqual([56, 68, 72, 67, 6]);
+  expect(arr.length).toBe(5);
   expect(observer).toHaveBeenCalledTimes(1);
   expect(observer.mock.calls[0][0]).toEqual(arr.value);
   observer.mockClear();
 
   arr.set(3, 1, 4, 6, 7);
   expect(arr.value).toEqual([56, 68, 72, 1, 4, 6, 7]);
+  expect(arr.length).toBe(7);
   expect(observer).toHaveBeenCalledTimes(1);
   expect(observer.mock.calls[0][0]).toEqual(arr.value);
   observer.mockClear();
 
   arr.moveWithin(3, 1, 3);
   expect(arr.value).toEqual([56, 1, 4, 6, 68, 72, 7]);
+  expect(arr.length).toBe(7);
   expect(observer).toHaveBeenCalledTimes(1);
   expect(observer.mock.calls[0][0]).toEqual(arr.value);
   observer.mockClear();
 
   arr.moveWithin(0, 2);
   expect(arr.value).toEqual([1, 56, 4, 6, 68, 72, 7]);
+  expect(arr.length).toBe(7);
   expect(observer).toHaveBeenCalledTimes(1);
   expect(observer.mock.calls[0][0]).toEqual(arr.value);
   observer.mockClear();
 
   arr.value = [1, 2, 3];
   expect(arr.value).toEqual([1, 2, 3]);
+  expect(arr.length).toBe(3);
   expect(observer).toHaveBeenCalledTimes(1);
   expect(observer.mock.calls[0][0]).toEqual(arr.value);
   observer.mockClear();

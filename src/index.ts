@@ -5,9 +5,8 @@ export {
   ObservedValue,
   MaybeObservable,
   Unsubscribe,
-  isObservable,
-  valueOf,
-} from "./observable";
+} from "./types";
+export { isObservable, valueOf } from "./utils";
 export { Order, ObservableArray, MutableArray } from "./array/types";
 export { mutableArray, observableArray } from "./array";
 export { join, derive, ObservedValues } from "./derived";
