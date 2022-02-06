@@ -1,12 +1,18 @@
 import { ObservableBase } from "./base";
+import { Comparator, Observable } from "./types";
 
-export type Comparator<T> = (a: T, b: T) => boolean;
+export interface Mutable<T> extends Omit<Observable<T>, "value"> {
+  /**
+   * Gets or sets the value of this observable.
+   */
+  value: T;
+}
 
 /**
  * An observable with a function to change the underlying value and notify
  * subscribers.
  */
-class Mutable<T> extends ObservableBase<T> {
+class MutableBase<T> extends ObservableBase<T> implements Mutable<T> {
   #value: T;
 
   #comparator: Comparator<T>;
@@ -34,10 +40,16 @@ class Mutable<T> extends ObservableBase<T> {
 
 /**
  * Creates an observable whose value can be changed.
+ *
+ * @param {T} initial
+ *   The initial value of the observable.
+ * @param {Comparator<T>} [comparator]
+ *   Used to determine if a new value is actually different from the old.
+ *   Defaults to Object.is.
  */
 export function mutable<T>(
   initial: T,
   comparator: Comparator<T> = Object.is,
 ): Mutable<T> {
-  return new Mutable(initial, comparator);
+  return new MutableBase(initial, comparator);
 }

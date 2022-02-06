@@ -1,6 +1,5 @@
-import { Comparator } from "./mutable";
+import { Comparator, Observable, ObservedValue, ObserverObject } from "./types";
 import { isObservable } from "./utils";
-import { Observable, ObservedValue, ObserverObject } from "./types";
 import { ObservableBase } from "./base";
 
 export type ObservedValues<T> = T extends [infer I]

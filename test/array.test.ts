@@ -132,3 +132,91 @@ test("mutableArray", () => {
   expect(observer.mock.calls[0][0]).toEqual(arr.value);
   observer.mockClear();
 });
+
+test("mapped array basics", () => {
+  let arr = mutableArray([4, 6, 56, 23, 89, 83]);
+  expect(arr.length).toBe(6);
+  expect(arr.value).toEqual([4, 6, 56, 23, 89, 83]);
+
+  let mapped = arr.map((val) => val * 2);
+  expect(mapped.length).toBe(6);
+  expect(mapped.value).toEqual([8, 12, 112, 46, 178, 166]);
+
+  arr[4] = 3;
+  expect(arr.length).toBe(6);
+  expect(arr.value).toEqual([4, 6, 56, 23, 3, 83]);
+  expect(mapped.length).toBe(6);
+  expect(mapped.value).toEqual([8, 12, 112, 46, 6, 166]);
+  expect(mapped[4]).toBe(6);
+
+  arr.delete(1);
+  expect(arr.length).toBe(5);
+  expect(arr.value).toEqual([4, 56, 23, 3, 83]);
+  expect(mapped.length).toBe(5);
+  expect(mapped.value).toEqual([8, 112, 46, 6, 166]);
+
+  arr[5] = 5;
+  expect(arr.length).toBe(6);
+  expect(arr.value).toEqual([4, 56, 23, 3, 83, 5]);
+  expect(mapped.length).toBe(6);
+  expect(mapped.value).toEqual([8, 112, 46, 6, 166, 10]);
+});
+
+test("mapped array identities", () => {
+  let arr = mutableArray([4, 6, 56, 23, 89, 83]);
+  expect(arr.length).toBe(6);
+  expect(arr.value).toEqual([4, 6, 56, 23, 89, 83]);
+
+  let mapped = arr.map(() => ({}));
+  expect(mapped.length).toBe(6);
+  expect(mapped.value).toEqual([{}, {}, {}, {}, {}, {}]);
+
+  let values = [...mapped];
+
+  expect(values[0]).toBe(mapped[0]);
+  expect(values[1]).toBe(mapped[1]);
+  expect(values[2]).toBe(mapped[2]);
+  expect(values[3]).toBe(mapped[3]);
+  expect(values[4]).toBe(mapped[4]);
+  expect(values[5]).toBe(mapped[5]);
+
+  arr[2] = 6;
+  expect(arr.value).toEqual([4, 6, 6, 23, 89, 83]);
+  expect(mapped[0]).toBe(values[0]);
+  expect(mapped[1]).toBe(values[1]);
+  expect(mapped[2]).not.toBe(values[2]);
+  expect(mapped[3]).toBe(values[3]);
+  expect(mapped[4]).toBe(values[4]);
+  expect(mapped[5]).toBe(values[5]);
+
+  values = [...mapped];
+
+  arr[3] = 23;
+  expect(arr.value).toEqual([4, 6, 6, 23, 89, 83]);
+  expect(mapped[0]).toBe(values[0]);
+  expect(mapped[1]).toBe(values[1]);
+  expect(mapped[2]).toBe(values[2]);
+  expect(mapped[3]).toBe(values[3]);
+  expect(mapped[4]).toBe(values[4]);
+  expect(mapped[5]).toBe(values[5]);
+
+  arr.insert(2, 87, 98);
+  expect(arr.value).toEqual([4, 6, 87, 98, 6, 23, 89, 83]);
+  expect(mapped[0]).toBe(values[0]);
+  expect(mapped[1]).toBe(values[1]);
+  expect(mapped[4]).toBe(values[2]);
+  expect(mapped[5]).toBe(values[3]);
+  expect(mapped[6]).toBe(values[4]);
+  expect(mapped[7]).toBe(values[5]);
+
+  values = [...mapped];
+
+  arr.delete(4, 2);
+  expect(arr.value).toEqual([4, 6, 87, 98, 89, 83]);
+  expect(mapped[0]).toBe(values[0]);
+  expect(mapped[1]).toBe(values[1]);
+  expect(mapped[2]).toBe(values[2]);
+  expect(mapped[3]).toBe(values[3]);
+  expect(mapped[4]).toBe(values[6]);
+  expect(mapped[5]).toBe(values[7]);
+});

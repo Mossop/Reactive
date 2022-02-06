@@ -1,21 +1,24 @@
-import { Comparator } from "../mutable";
 import { ObservableBase } from "../base";
-import { GetElement } from "./proxy";
+import { Comparator } from "../types";
+import type { DerivedArray } from "./derived";
+import { GetElement, proxyArray } from "./proxy";
 import { MutableArray, ObservableArray } from "./types";
 
 export interface Element<T> {
   value: T;
 }
 
-export abstract class ObservableArrayBase<T, E extends Element<T>>
+export abstract class ObservableArrayBase<T, TE extends Element<T> = Element<T>>
   extends ObservableBase<T[]>
   implements Omit<ObservableArray<T>, number>
 {
   #values: T[] = [];
 
-  protected constructor(protected readonly storage: E[]) {
+  #derived: WeakRef<DerivedArray<T, any, any>>[] = [];
+
+  protected constructor(protected storage: TE[]) {
     super();
-    this.#values = this.storage.map((val: E): T => val.value);
+    this.#values = this.storage.map((val: TE): T => val.value);
   }
 
   public get value(): T[] {
@@ -26,15 +29,29 @@ export abstract class ObservableArrayBase<T, E extends Element<T>>
     return this.#values.length;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  protected notifyChanges(_changedElements: E[] = []): void {
-    this.#values = this.storage.map((val: E): T => val.value);
+  protected notifyChanges(changedElements?: Set<TE>): void {
+    this.#values = this.storage.map((val: TE): T => val.value);
+
+    for (let derived of this.#derived) {
+      try {
+        derived.deref()?.onSourceChanged(this.storage, changedElements);
+      } catch (e) {
+        // Ignore errors
+      }
+    }
 
     this.notify();
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  protected onSourceChanged(changedElements: E[]): void {}
+  public map<R>(
+    mapper: (value: T) => R,
+    comparator: Comparator<R> = Object.is,
+  ): ObservableArray<R> {
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    let impl = new MappedArray(this, this.storage, mapper, comparator);
+    this.#derived.push(new WeakRef(impl));
+    return proxyArray(impl);
+  }
 
   public [GetElement](index: number): T | undefined {
     return this.#values[index];
@@ -49,10 +66,7 @@ export class MutableArrayBase<T>
   extends ObservableArrayBase<T, Element<T>>
   implements Omit<MutableArray<T>, number>
 {
-  public constructor(
-    values: T[] = [],
-    protected comparator: Comparator<T> = Object.is,
-  ) {
+  public constructor(values: T[], protected comparator: Comparator<T>) {
     super(values.map((value: T): Element<T> => ({ value })));
   }
 
@@ -145,7 +159,7 @@ export class MutableArrayBase<T>
       throw new Error("Cannot set outside the current bounds of the array.");
     }
 
-    let changedElements: Element<T>[] = [];
+    let changedElements = new Set<Element<T>>();
 
     let index = target;
     for (let value of values) {
@@ -153,7 +167,7 @@ export class MutableArrayBase<T>
       if (element) {
         if (!this.comparator(element.value, value)) {
           element.value = value;
-          changedElements.push(element);
+          changedElements.add(element);
         }
       } else {
         this.storage[index] = { value };
@@ -162,12 +176,10 @@ export class MutableArrayBase<T>
       index++;
     }
 
-    this.storage.splice(
-      target,
-      values.length,
-      ...values.map((value: T): Element<T> => ({ value })),
-    );
-
-    this.notifyChanges();
+    this.notifyChanges(changedElements);
   }
 }
+
+// This is required to break an import cycle.
+// eslint-disable-next-line import/first, import/no-cycle
+import { MappedArray } from "./derived";

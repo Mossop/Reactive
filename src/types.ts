@@ -9,6 +9,8 @@ export type Unsubscribe = () => void;
 export type ObservedValue<T> = T extends Observable<infer I> ? I : T;
 export type MaybeObservable<T> = T | Observable<T>;
 
+export type Comparator<T> = (a: T, b: T) => boolean;
+
 export interface Observable<T> {
   /**
    * Gets the current value of the observable.

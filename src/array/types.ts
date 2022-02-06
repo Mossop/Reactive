@@ -1,11 +1,11 @@
-import { Observable } from "../types";
+import { Observable, Comparator } from "../types";
 
 export type Order<T> = (a: T, b: T) => number;
 
 export interface ObservableArray<T> extends Observable<T[]>, Iterable<T> {
   /**
-   * Gets an element in the array. Throws an error if getting outside the
-   * current bounds of the array.
+   * Gets an element in the array. Returns undefined if outside the bounds of
+   * the array.
    */
   readonly [key: number]: T;
 
@@ -13,14 +13,32 @@ export interface ObservableArray<T> extends Observable<T[]>, Iterable<T> {
    * The length of the array.
    */
   readonly length: number;
+
+  /**
+   * Converts this array into another array by mapping each element with a
+   * mapping function. The mapping function will only be called when an
+   * element's value has changed or new elements are added. Changes to the order
+   * of elements will not cause them to be mapped again.
+   *
+   * @param {(value: T) => R} mapper
+   *   The mapping function called to generate values for the new array.
+   * @param {Comparator<R>} [comparator]
+   *   Used to determine if the result of mapping is actually a different value
+   *   to any previously generated. Used to reduce downstream changes. Defaults
+   *   to Object.is.
+   * @returns {ObservableArray<R>}
+   */
+  map<R>(
+    mapper: (value: T) => R,
+    comparator?: Comparator<R>,
+  ): ObservableArray<R>;
 }
 
 export interface MutableArray<T>
   extends Omit<ObservableArray<T>, number | "value"> {
   /**
-   * Sets or gets an element in the array. Throws an error if getting outside
-   * the current bounds of the array or setting more then one element beyond
-   * the end of the array.
+   * Sets or gets an element in the array. Throws an error if setting more then
+   * one element beyond the end of the array.
    */
   [key: number]: T;
 
