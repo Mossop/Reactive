@@ -1,4 +1,5 @@
 import { Comparator } from "../types";
+// eslint-disable-next-line import/no-cycle
 import { Element, ObservableArrayBase } from "./base";
 
 interface DerivedElement<S, T> extends Element<T> {
