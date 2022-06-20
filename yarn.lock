@@ -500,10 +500,10 @@
     "@types/yargs" "^16.0.0"
     chalk "^4.0.0"
 
-"@mossop/config@1.0.5":
-  version "1.0.5"
-  resolved "https://registry.yarnpkg.com/@mossop/config/-/config-1.0.5.tgz#e5266bff0280e3aad29a36a8dceb8bc298d60d2e"
-  integrity sha512-yDQDF/VDTbJUx8icNa4kmNGGONQnLyt24KTI9IUAMUcPK1Oq1N31yfnTMTo3S69J8DwTgViT5Tw33hImqfLwfw==
+"@mossop/config@1.0.6":
+  version "1.0.6"
+  resolved "https://registry.yarnpkg.com/@mossop/config/-/config-1.0.6.tgz#765644c386e72a82a6f54a6ca8b8c30597129eb5"
+  integrity sha512-LoFEb3uBS18yO1g9KjDXeEtAIN/bJ2bQcTR35BbRrwJTZDlJG1z0gkmkHxV7zuUCetcvq3e4mf+ha6A1FySFDQ==
 
 "@nodelib/fs.scandir@2.1.5":
   version "2.1.5"

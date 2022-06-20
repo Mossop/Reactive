@@ -13,7 +13,7 @@
     "test": "jest --coverage"
   },
   "devDependencies": {
-    "@mossop/config": "1.0.5",
+    "@mossop/config": "1.0.6",
     "@types/jest": "^27.5.0",
     "@typescript-eslint/eslint-plugin": "^5.28.0",
     "@typescript-eslint/parser": "^5.27.0",
