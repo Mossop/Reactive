@@ -1,5 +1,5 @@
 import { ObservableBase } from "../base";
-import { Comparator } from "../types";
+import { Comparator, MaybeObservable } from "../types";
 import type { DerivedArray } from "./derived";
 import { GetElement, proxyArray } from "./proxy";
 import { MutableArray, ObservableArray } from "./types";
@@ -16,7 +16,7 @@ export abstract class ObservableArrayBase<T, TE extends Element<T> = Element<T>>
 
   #derived: WeakRef<DerivedArray<T, any, any>>[] = [];
 
-  protected constructor(protected storage: TE[]) {
+  protected constructor(protected readonly storage: TE[]) {
     super();
     this.#values = this.storage.map((val: TE): T => val.value);
   }
@@ -44,7 +44,7 @@ export abstract class ObservableArrayBase<T, TE extends Element<T> = Element<T>>
   }
 
   public map<R>(
-    mapper: (value: T) => R,
+    mapper: MaybeObservable<(value: T) => R>,
     comparator: Comparator<R> = Object.is,
   ): ObservableArray<R> {
     // eslint-disable-next-line @typescript-eslint/no-use-before-define

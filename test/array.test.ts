@@ -220,3 +220,20 @@ test("mapped array identities", () => {
   expect(mapped[4]).toBe(values[6]);
   expect(mapped[5]).toBe(values[7]);
 });
+
+test("Observable mapping function", () => {
+  let mapper = mutable((val: number): number => val * 2);
+
+  let arr = mutableArray([4, 6, 56, 23, 89, 83]);
+  let mapped = arr.map(mapper);
+  expect(mapped.length).toBe(6);
+  expect(mapped.value).toEqual([8, 12, 112, 46, 178, 166]);
+
+  mapper.value = (val: number): number => val * 3;
+  expect(mapped.length).toBe(6);
+  expect(mapped.value).toEqual([12, 18, 168, 69, 267, 249]);
+
+  arr[4] = 2;
+  expect(mapped.length).toBe(6);
+  expect(mapped.value).toEqual([12, 18, 168, 69, 6, 249]);
+});

@@ -1,4 +1,5 @@
-import { Comparator } from "../types";
+import { isObservable } from "..";
+import { Comparator, MaybeObservable, ObserverObject } from "../types";
 // eslint-disable-next-line import/no-cycle
 import { Element, ObservableArrayBase } from "./base";
 
@@ -11,7 +12,7 @@ export abstract class DerivedArray<
   T = S,
   TE extends DerivedElement<S, T> = DerivedElement<S, T>,
 > extends ObservableArrayBase<T, TE> {
-  protected elementMap: Map<Element<S>, number>;
+  protected elementMap: Map<Element<S>, TE>;
 
   protected constructor(
     // @ts-ignore
@@ -21,20 +22,8 @@ export abstract class DerivedArray<
     super(storage);
 
     this.elementMap = new Map(
-      storage.map((element: TE, index: number): [Element<S>, number] => [
-        element.source,
-        index,
-      ]),
+      storage.map((element: TE): [Element<S>, TE] => [element.source, element]),
     );
-  }
-
-  protected elementFromSource(source: Element<S>): TE | undefined {
-    let index = this.elementMap.get(source);
-    if (index !== undefined) {
-      return this.storage[index];
-    }
-
-    return undefined;
   }
 
   public abstract onSourceChanged(
@@ -44,10 +33,14 @@ export abstract class DerivedArray<
 }
 
 export class MappedArray<S, T> extends DerivedArray<S, T> {
+  #mapper: (val: S) => T;
+
+  #observer: ObserverObject<(val: S) => T> | null = null;
+
   public constructor(
     source: ObservableArrayBase<S>,
     sourceStorage: Element<S>[],
-    protected readonly mapper: (val: S) => T,
+    protected readonly mapper: MaybeObservable<(val: S) => T>,
     protected readonly comparator: Comparator<T>,
   ) {
     super(
@@ -55,51 +48,86 @@ export class MappedArray<S, T> extends DerivedArray<S, T> {
       sourceStorage.map(
         (element: Element<S>): DerivedElement<S, T> => ({
           source: element,
-          value: mapper(element.value),
+          value: (isObservable(mapper) ? mapper.value : mapper)(element.value),
         }),
       ),
     );
+
+    if (isObservable(mapper)) {
+      this.#mapper = mapper.value;
+
+      let observe = (newMapper: (val: S) => T): void => {
+        this.#mapper = newMapper;
+        this.updateElements();
+      };
+
+      this.#observer = { observe };
+
+      mapper.subscribe(this.#observer);
+    } else {
+      this.#mapper = mapper;
+    }
+  }
+
+  private updateElements() {
+    let changes = new Set<DerivedElement<S, T>>();
+    for (let element of this.storage) {
+      let newValue = this.#mapper(element.source.value);
+      if (!this.comparator(newValue, element.value)) {
+        element.value = newValue;
+        changes.add(element);
+      }
+    }
+
+    if (changes.size) {
+      this.notifyChanges(changes);
+    }
   }
 
   public override onSourceChanged(
     sourceStorage: readonly Element<S>[],
     changedElements?: Set<Element<S>>,
   ): void {
-    let storage: DerivedElement<S, T>[] = [];
+    let oldElements = this.storage.splice(0, this.storage.length);
+
+    let oldSources = new Set(this.elementMap.keys());
     let changes = new Set<DerivedElement<S, T>>();
-    let elementMap = new Map<Element<S>, number>();
     let changed: boolean = false;
 
-    for (let source of sourceStorage) {
-      elementMap.set(source, storage.length);
-      if (!changed) {
-        changed = this.elementMap.get(source) !== storage.length;
-      }
+    sourceStorage.forEach((source, index) => {
+      oldSources.delete(source);
 
-      let element = this.elementFromSource(source);
+      let element = this.elementMap.get(source);
       if (element) {
+        if (element !== oldElements[index]) {
+          changed = true;
+        }
+
         if (changedElements?.has(source)) {
-          let newValue = this.mapper(source.value);
+          let newValue = this.#mapper(source.value);
           if (!this.comparator(newValue, element.value)) {
-            element.value = this.mapper(source.value);
+            element.value = newValue;
             changes.add(element);
             changed = true;
           }
         }
-
-        storage.push(element);
       } else {
-        storage.push({
+        element = {
           source,
-          value: this.mapper(source.value),
-        });
+          value: this.#mapper(source.value),
+        };
+        this.elementMap.set(source, element);
+        changed = true;
       }
+
+      this.storage.push(element);
+    });
+
+    for (let source of oldSources) {
+      this.elementMap.delete(source);
     }
 
     if (changed) {
-      this.storage = storage;
-      this.elementMap = elementMap;
-
       this.notifyChanges(changes);
     }
   }

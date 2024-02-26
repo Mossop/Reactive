@@ -54,6 +54,10 @@ abstract class WrappedObserver<T> {
 
   public drop(): void {}
 
+  public isAlive(): boolean {
+    return true;
+  }
+
   static wrap<T>(
     observable: Observable<T>,
     observer: Observer<T>,
@@ -103,6 +107,10 @@ class WrappedObject<T> extends WrappedObserver<T> {
     refs.addRef(observable);
   }
 
+  public override isAlive(): boolean {
+    return this.observer.deref() !== undefined;
+  }
+
   public notify(value: T): void {
     this.observer.deref()?.observe(value, this.observable);
   }
@@ -130,6 +138,20 @@ export class Observers<T> {
 
   public constructor(protected readonly observable: Observable<T>) {}
 
+  protected get observers(): WrappedObserver<T>[] {
+    let observers: WrappedObserver<T>[] = [];
+
+    for (let observer of this.storage) {
+      if (observer.isAlive()) {
+        observers.push(observer);
+      } else {
+        this.storage.delete(observer);
+      }
+    }
+
+    return observers;
+  }
+
   public subscribe(observer: Observer<T>): Unsubscribe {
     let wrapped = WrappedObserver.wrap(this.observable, observer);
 
@@ -141,7 +163,7 @@ export class Observers<T> {
   }
 
   public notify(value: T): void {
-    for (let observer of [...this.storage]) {
+    for (let observer of this.observers) {
       observer.notify(value);
     }
   }

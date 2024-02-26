@@ -1,4 +1,4 @@
-import { Observable, Comparator } from "../types";
+import { Observable, Comparator, MaybeObservable } from "../types";
 
 export type Order<T> = (a: T, b: T) => number;
 
@@ -18,9 +18,11 @@ export interface ObservableArray<T> extends Observable<T[]>, Iterable<T> {
    * Converts this array into another array by mapping each element with a
    * mapping function. The mapping function will only be called when an
    * element's value has changed or new elements are added. Changes to the order
-   * of elements will not cause them to be mapped again.
+   * of elements will not cause them to be mapped again. The mapping function
+   * may itself be an observable in which case whenever its value changes the
+   * entire array is re-mapped.
    *
-   * @param {(value: T) => R} mapper
+   * @param {MaybeObservable<(value: T) => R>} mapper
    *   The mapping function called to generate values for the new array.
    * @param {Comparator<R>} [comparator]
    *   Used to determine if the result of mapping is actually a different value
@@ -29,7 +31,7 @@ export interface ObservableArray<T> extends Observable<T[]>, Iterable<T> {
    * @returns {ObservableArray<R>}
    */
   map<R>(
-    mapper: (value: T) => R,
+    mapper: MaybeObservable<(value: T) => R>,
     comparator?: Comparator<R>,
   ): ObservableArray<R>;
 }
